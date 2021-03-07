@@ -40,9 +40,16 @@ namespace ContinuationToken.Providers
             if (string.IsNullOrWhiteSpace(token))
                 return default;
 
-            var values = _formatter.Deserialize(token, _propertyTypes);
+            try
+            {
+                var values = _formatter.Deserialize(token, _propertyTypes);
 
-            return values.Cast<int?>().FirstOrDefault();
+                return values.Cast<int?>().FirstOrDefault();
+            }
+            catch
+            {
+                return default;
+            }
         }
 
         public IOrderedQueryable<T> SortQuery(IQueryable<T> query)
