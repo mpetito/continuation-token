@@ -6,24 +6,41 @@ using static ContinuationToken.Tests.TestRecords;
 
 namespace ContinuationToken.Tests.Integration
 {
-    public class QueryTranslationTests
+    public class TranslationTests
     {
-        [Theory]
-        [MemberData(nameof(ScenarioGenerator))]
-        public void QueriesCanTranslate(TestScenario scenario, DbContextOptions options)
+        internal void QueriesCanTranslate(TestScenario scenario, DbContextOptions options)
         {
             var (continuationToken, _) = scenario;
-            var data = GenerateRecords(1).Last();
+            var data = GenerateRecords(1).ToList();
 
             using var dbContext = new TestDbContext(options);
 
-            var token = continuationToken.GetToken(data);
+            var first = continuationToken.ResumeQuery(dbContext.Records);
+            Assert.NotNull(first.Query.ToQueryString());
 
-            var initQuery = scenario.ContinuationToken.ResumeQuery(dbContext.Records);
-            var nextQuery = scenario.ContinuationToken.ResumeQuery(dbContext.Records, token);
+            var token = first.GetNextToken(data);
+            Assert.NotNull(token);
 
-            Assert.NotNull(initQuery.ToQueryString());
-            Assert.NotNull(nextQuery.ToQueryString());
+            var next = continuationToken.ResumeQuery(dbContext.Records, token);
+            Assert.NotNull(next.Query.ToQueryString());
+        }
+
+        [Theory]
+        [MemberData(nameof(ScenarioGenerator))]
+        public void BookmarkQueriesCanTranslate(TestScenario scenario, DbContextOptions options)
+        {
+            scenario.Builder.BookmarkToken();
+
+            QueriesCanTranslate(scenario, options);
+        }
+
+        [Theory]
+        [MemberData(nameof(ScenarioGenerator))]
+        public void OffsetQueriesCanTranslate(TestScenario scenario, DbContextOptions options)
+        {
+            scenario.Builder.OffsetToken();
+
+            QueriesCanTranslate(scenario, options);
         }
 
         public static IEnumerable<object[]> ScenarioGenerator()

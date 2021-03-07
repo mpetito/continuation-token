@@ -41,9 +41,16 @@ namespace ContinuationToken
         ITokenBuilder<T> UseResolver(IMethodResolver resolver);
 
         /// <summary>
+        /// Use a factory for building the continuation token using configured options.
+        /// </summary>
+        /// <param name="factory">Factory to use.</param>
+        /// <returns>This builder for fluent configuration.</returns>
+        ITokenBuilder<T> UseFactory(Func<ITokenOptions<T>, IQueryContinuationToken<T>> factory);
+
+        /// <summary>
         /// Creates a continuation token using the current specification.
         /// </summary>
         /// <returns>Token.</returns>
-        IContinuationToken<T> Build();
+        IQueryContinuationToken<T> Build();
     }
 }

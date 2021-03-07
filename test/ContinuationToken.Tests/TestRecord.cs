@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ContinuationToken.Formatting;
+using System;
 using System.Collections.Generic;
 
 namespace ContinuationToken.Tests
@@ -8,32 +9,39 @@ namespace ContinuationToken.Tests
     public static class TestRecords
     {
         public static IEnumerable<TestRecord> GenerateRecords(int count) => new Bogus.Faker<TestRecord>()
+                .UseSeed(0)
                 .CustomInstantiator(f => new TestRecord(default, default, default, default, default))
                 .RuleFor(r => r.Id, f => f.IndexGlobal)
                 .RuleFor(r => r.Name, f => f.Name.FullName())
-                .RuleFor(r => r.Time, f => f.Date.Future())
+                .RuleFor(r => r.Time, f => f.Date.Future().ToUniversalTime())
                 .RuleFor(r => r.Uuid, f => Guid.NewGuid())
                 .RuleFor(r => r.Amount, f => f.Random.Int(0, 10))
                 .Generate(count);
+
         public static IEnumerable<TestScenario> MakeScenarios()
         {
+            TestScenario Scenario()
+            {
+                var scenario = new TestScenario();
+                // for easier debugging
+                scenario.Builder.UseFormatter(new JsonTokenFormatter());
+                return scenario;
+            }
+
             var scenarios = new List<TestScenario>
             {
-                new TestScenario().Ascending(r => r.Id),
-                new TestScenario().Descending(r => r.Id),
-                new TestScenario().Ascending(r => r.Uuid),
-                new TestScenario().Descending(r => r.Uuid),
-
-                new TestScenario().Ascending(r => r.Id).Descending(r => r.Uuid),
-
-                new TestScenario().Ascending(r => r.Name).Ascending(r => r.Id),
-                new TestScenario().Descending(r => r.Name).Ascending(r => r.Id),
-                new TestScenario().Ascending(r => r.Time).Ascending(r => r.Id),
-                new TestScenario().Descending(r => r.Time).Ascending(r => r.Id),
-                new TestScenario().Ascending(r => r.Amount).Ascending(r => r.Id),
-                new TestScenario().Descending(r => r.Amount).Ascending(r => r.Id),
-
-                new TestScenario().Ascending(r => r.Name).Descending(r => r.Time).Ascending(r => r.Id),
+                Scenario().Ascending(r => r.Id),
+                Scenario().Descending(r => r.Id),
+                Scenario().Ascending(r => r.Uuid),
+                Scenario().Descending(r => r.Uuid),
+                Scenario().Ascending(r => r.Id).Descending(r => r.Uuid),
+                Scenario().Ascending(r => r.Name).Ascending(r => r.Id),
+                Scenario().Descending(r => r.Name).Ascending(r => r.Id),
+                Scenario().Ascending(r => r.Time).Ascending(r => r.Id),
+                Scenario().Descending(r => r.Time).Ascending(r => r.Id),
+                Scenario().Ascending(r => r.Amount).Ascending(r => r.Id),
+                Scenario().Descending(r => r.Amount).Ascending(r => r.Id),
+                Scenario().Ascending(r => r.Name).Descending(r => r.Time).Ascending(r => r.Id),
             };
 
             return scenarios;

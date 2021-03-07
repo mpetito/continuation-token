@@ -8,9 +8,7 @@ namespace ContinuationToken.Tests.Integration
 {
     public class PaginationTests
     {
-        [Theory]
-        [MemberData(nameof(ScenarioGenerator))]
-        public void ExhaustsPagesInOrder(TestScenario scenario, int recordCount, int pageSize)
+        internal void ExhaustsPagesInOrder(TestScenario scenario, int recordCount, int pageSize)
         {
             var (continuationToken, sorter) = scenario;
             var data = GenerateRecords(recordCount).AsQueryable();
@@ -22,12 +20,31 @@ namespace ContinuationToken.Tests.Integration
             string token = default;
             do
             {
-                var page = continuationToken.ResumeQuery(data, token).Take(pageSize).ToList();
+                var continuation = continuationToken.ResumeQuery(data, token);
+                var page = continuation.Query.Take(pageSize).ToList();
 
                 Assert.Equal(pageList[pageIndex++], page);
 
-                token = continuationToken.GetToken(page.LastOrDefault());
+                token = continuation.GetNextToken(page);
             } while (token != default);
+        }
+
+        [Theory]
+        [MemberData(nameof(ScenarioGenerator))]
+        public void BookmarkExhaustsPagesInOrder(TestScenario scenario, int recordCount, int pageSize)
+        {
+            scenario.Builder.BookmarkToken();
+
+            ExhaustsPagesInOrder(scenario, recordCount, pageSize);
+        }
+
+        [Theory]
+        [MemberData(nameof(ScenarioGenerator))]
+        public void OffsetExhaustsPagesInOrder(TestScenario scenario, int recordCount, int pageSize)
+        {
+            scenario.Builder.OffsetToken();
+
+            ExhaustsPagesInOrder(scenario, recordCount, pageSize);
         }
 
         public static IEnumerable<object[]> ScenarioGenerator()

@@ -3,46 +3,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace ContinuationToken
+namespace ContinuationToken.Providers
 {
     /// <summary>
-    /// Implements a continuation token specification.
+    /// Token implementation that serializes a bookmark using the last witnessed key properties.
     /// </summary>
     /// <typeparam name="T">Query type.</typeparam>
-    /// <remarks>
-    /// A continuation token is composed of a forward-linked-list of properties.
-    /// The tuple projected by these properties should form a unique key for <typeparamref name="T"/>.
-    /// 
-    /// When generating a token string, the tuple for the last witnessed result from a query is serialized to a string.
-    /// When resuming from a token string, the tuple is deserialized and the query is filtered and sorted to start after the last result.
-    /// </remarks>
-    internal class ContinuationToken<T> : IContinuationToken<T> where T : class
+    internal class BookmarkToken<T> : IQueryContinuationToken<T> where T : class
     {
         private readonly ITokenFormatter _formatter;
-        private readonly ParameterExpression _input;
+        private readonly ISortedProperty<T> _properties;
 
-        private readonly ISortedProperty<T> _head;
+        private readonly ParameterExpression _input;
         private readonly Type[] _propertyTypes;
 
-        public ContinuationToken(TokenBuilder<T> builder, ISortedProperty<T> head)
-            : this(builder.Formatter, builder.Input, head)
+        public BookmarkToken(ITokenOptions<T> options)
+            : this(options.Formatter, options.Properties, options.Input)
         {
         }
 
-        public ContinuationToken(ITokenFormatter formatter, ParameterExpression input, ISortedProperty<T> head)
+        public BookmarkToken(ITokenFormatter formatter, ISortedProperty<T> properties, ParameterExpression input)
         {
             _formatter = formatter;
+            _properties = properties;
             _input = input;
-            _head = head;
-            _propertyTypes = _head.Select(p => p.PropertyType).ToArray();
+            _propertyTypes = _properties.Select(p => p.PropertyType).ToArray();
         }
 
-        public string? GetToken(T last)
+        public string? GetNextToken(T? last)
         {
             if (last is null)
                 return null;
 
-            var arr = _head.Select(prop => prop.GetValue(last)).ToArray();
+            var arr = _properties.Select(prop => prop.GetValue(last)).ToArray();
 
             return _formatter.Serialize(arr, _propertyTypes);
         }
@@ -67,7 +60,7 @@ namespace ContinuationToken
             if (query is null)
                 throw new ArgumentNullException(nameof(query));
 
-            return _head.Sort(query);
+            return _properties.Sort(query);
         }
 
         public IQueryable<T> FilterQuery(IQueryable<T> query, string? token)
@@ -77,7 +70,7 @@ namespace ContinuationToken
 
             var values = ParseToken(token).GetEnumerator();
 
-            var expression = _head.Filter(values);
+            var expression = _properties.Filter(values);
             if (expression is null)
                 return query;
 
@@ -87,12 +80,14 @@ namespace ContinuationToken
         }
 
 
-        public IOrderedQueryable<T> ResumeQuery(IQueryable<T> query, string? token)
+        public IQueryContinuation<T> ResumeQuery(IQueryable<T> query, string? token)
         {
             if (query is null)
                 throw new ArgumentNullException(nameof(query));
 
-            return SortQuery(FilterQuery(query, token));
+            var resumed = SortQuery(FilterQuery(query, token));
+
+            return new BookmarkContinuation<T>(this, resumed);
         }
     }
 }

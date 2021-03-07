@@ -6,10 +6,11 @@ namespace ContinuationToken.Tests
 {
     public class TestScenario
     {
-        private readonly ITokenBuilder<TestRecord> _builder = ContinuationTokens.ConfigureToken<TestRecord>();
         private Func<IOrderedQueryable<TestRecord>, IOrderedQueryable<TestRecord>> _sorter = query => query;
 
-        public IContinuationToken<TestRecord> ContinuationToken => _builder.Build();
+        public ITokenBuilder<TestRecord> Builder { get; } = QueryContinuationToken.Configure<TestRecord>();
+
+        public IQueryContinuationToken<TestRecord> Token => Builder.Build();
 
         public IOrderedQueryable<TestRecord> Sort(IQueryable<TestRecord> query)
         {
@@ -18,7 +19,7 @@ namespace ContinuationToken.Tests
 
         public TestScenario Ascending<TProp>(Expression<Func<TestRecord, TProp>> property)
         {
-            _builder.Ascending(property);
+            Builder.Ascending(property);
 
             var inner = _sorter;
             _sorter = query => inner(query).ThenBy(property);
@@ -28,7 +29,7 @@ namespace ContinuationToken.Tests
 
         public TestScenario Descending<TProp>(Expression<Func<TestRecord, TProp>> property)
         {
-            _builder.Descending(property);
+            Builder.Descending(property);
 
             var inner = _sorter;
             _sorter = query => inner(query).ThenByDescending(property);
@@ -38,14 +39,14 @@ namespace ContinuationToken.Tests
 
         public override string ToString()
         {
-            return _builder.ToString();
+            return Builder.ToString();
         }
 
         public void Deconstruct(
-            out IContinuationToken<TestRecord> continuationToken,
+            out IQueryContinuationToken<TestRecord> continuationToken,
             out Func<IQueryable<TestRecord>, IOrderedQueryable<TestRecord>> sorter)
         {
-            continuationToken = ContinuationToken;
+            continuationToken = Token;
             sorter = Sort;
         }
     }

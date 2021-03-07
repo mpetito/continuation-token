@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace ContinuationToken
+namespace ContinuationToken.Providers
 {
     internal class SortedProperty<T, TProp> : ISortedProperty<T> where T : class
     {
@@ -74,7 +74,7 @@ namespace ContinuationToken
 
             if (tail is null)
                 return predicate;
-            
+
             return Expression.Or(predicate, Expression.And(Compare(ExpressionType.Equal), tail));
         }
 

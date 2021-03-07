@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using ContinuationToken.Providers;
+using Moq;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,7 +8,7 @@ using static ContinuationToken.Tests.TestRecords;
 
 namespace ContinuationToken.Tests
 {
-    public class ContinuationTokenTests
+    public class BookmarkTokenTests
     {
         internal Mock<ITokenFormatter> Formatter { get; } = new Mock<ITokenFormatter>();
 
@@ -17,9 +18,9 @@ namespace ContinuationToken.Tests
 
         internal Type PropertyType { get; } = typeof(string);
 
-        internal ContinuationToken<TestRecord> Token { get; }
+        internal BookmarkToken<TestRecord> Token { get; }
 
-        public ContinuationTokenTests()
+        public BookmarkTokenTests()
         {
             Head.Setup(o => o.GetEnumerator())
                 .Returns(() => Enumerable.Repeat(Head.Object, 1).GetEnumerator());
@@ -27,7 +28,7 @@ namespace ContinuationToken.Tests
             Head.Setup(o => o.PropertyType)
                 .Returns(PropertyType);
 
-            Token = new ContinuationToken<TestRecord>(Formatter.Object, Input, Head.Object);
+            Token = new BookmarkToken<TestRecord>(Formatter.Object, Head.Object, Input);
         }
 
         [Fact]
@@ -65,7 +66,7 @@ namespace ContinuationToken.Tests
         [Fact]
         public void NullTokenOnceExhausted()
         {
-            var output = Token.GetToken(null);
+            var output = Token.GetNextToken(null);
 
             Assert.Null(output);
         }
@@ -75,7 +76,7 @@ namespace ContinuationToken.Tests
         {
             var data = GenerateRecords(1).First();
 
-            Token.GetToken(data);
+            Token.GetNextToken(data);
 
             Formatter.Verify(o => o.Serialize(
                 It.IsAny<object[]>(),

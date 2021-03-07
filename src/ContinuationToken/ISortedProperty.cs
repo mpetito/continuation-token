@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ContinuationToken.Providers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -10,7 +11,7 @@ namespace ContinuationToken
     /// </summary>
     /// <typeparam name="T">Query type.</typeparam>
     /// <see cref="SortedProperty{T, TProp}"/>
-    internal interface ISortedProperty<T> : IEnumerable<ISortedProperty<T>>
+    public interface ISortedProperty<T> : IEnumerable<ISortedProperty<T>>
         where T : class
     {
         /// <summary>
