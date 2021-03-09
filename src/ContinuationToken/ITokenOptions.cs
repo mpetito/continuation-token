@@ -7,6 +7,5 @@ namespace ContinuationToken
         ISortedProperty<T> Properties { get; }
         ParameterExpression Input { get; }
         ITokenFormatter Formatter { get; }
-        IMethodResolver Resolver { get; }
     }
 }

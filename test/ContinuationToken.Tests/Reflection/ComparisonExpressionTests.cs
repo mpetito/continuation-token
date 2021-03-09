@@ -1,10 +1,11 @@
 ﻿using ContinuationToken.Reflection;
 using System;
+using System.Linq.Expressions;
 using Xunit;
 
 namespace ContinuationToken.Tests.Reflection
 {
-    public class MethodResolverTests
+    public class ComparisonExpressionTests
     {
         [Theory]
         [InlineData(typeof(string))]
@@ -21,18 +22,22 @@ namespace ContinuationToken.Tests.Reflection
         [InlineData(typeof(Guid))]
         public void HasComparerFor(Type type)
         {
-            IMethodResolver resolver = new MethodResolver();
+            var factory = new ComparisonProviderFactory();
+            var provider = factory.GetProvider(type);
 
-            var binding = resolver.GetCompareMethod(type);
+            var left = Expression.Parameter(type, "left");
+            var right = Expression.Parameter(type, "right");
 
-            Assert.NotNull(binding);
+            var equal = provider.Equal(type, left, right);
+            Assert.NotNull(equal);
+            var lessThan = provider.LessThan(type, left, right);
+            Assert.NotNull(lessThan);
 
-            if (type.IsValueType)
+            if (type.IsValueType && Nullable.GetUnderlyingType(type) == null)
             {
                 // check for nullable type compat
                 var nullableType = typeof(Nullable<>).MakeGenericType(type);
-                var nullableBinding = resolver.GetCompareMethod(nullableType);
-                Assert.NotNull(nullableBinding);
+                HasComparerFor(nullableType);
             }
         }
     }

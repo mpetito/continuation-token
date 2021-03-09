@@ -34,11 +34,11 @@ namespace ContinuationToken
         ITokenBuilder<T> UseFormatter(ITokenFormatter formatter);
 
         /// <summary>
-        /// Use a resolver for comparing properties while sorting.
+        /// Use a comparer for a given type when comparing properties while sorting.
         /// </summary>
-        /// <param name="resolver">Resolver to use.</param>
+        /// <param name="provider">Provider to use.</param>
         /// <returns>This builder for fluent configuration.</returns>
-        ITokenBuilder<T> UseResolver(IMethodResolver resolver);
+        ITokenBuilder<T> UseComparer(Type type, IComparisonProvider provider);
 
         /// <summary>
         /// Use a factory for building the continuation token using configured options.

@@ -1,5 +1,4 @@
-﻿using ContinuationToken.Reflection;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,14 +9,14 @@ namespace ContinuationToken.Providers
     internal class SortedProperty<T, TProp> : ISortedProperty<T> where T : class
     {
         private readonly Expression<Func<T, TProp>> _property;
-        private readonly MethodBinding _compare;
+        private readonly IComparisonProvider _comparer;
         private readonly Func<T, TProp> _accessor;
 
-        public SortedProperty(Expression<Func<T, TProp>> property, MethodBinding compare, bool descending = false, bool first = false)
+        public SortedProperty(Expression<Func<T, TProp>> property, IComparisonProvider comparer, bool descending = false, bool first = false)
         {
             _property = property;
+            _comparer = comparer;
             _accessor = property.Compile();
-            _compare = compare;
 
             Descending = descending;
             First = first;
@@ -56,26 +55,21 @@ namespace ContinuationToken.Providers
             if (!values.MoveNext())
                 return default;
 
-            var zero = Expression.Constant(0, typeof(int));
+            var prop = _property.Body;
             var value = Expression.Constant(
                 values.Current,
                 typeof(TProp));
 
-            // produces a comparison expression of the form: Compare(property, value) <> 0
-            // .. uses an inequality operator corresponding to ascending / descending sort direction
-            BinaryExpression Compare(ExpressionType comparison) => Expression.MakeBinary(
-                comparison,
-                _compare.Apply(_property.Body, value),
-                zero);
-
-            var predicate = Compare(Descending ? ExpressionType.LessThan : ExpressionType.GreaterThan);
+            var predicate = Descending
+                ? _comparer.LessThan(PropertyType, prop, value)
+                : _comparer.LessThan(PropertyType, value, prop);
 
             var tail = Next?.Filter(values);
 
             if (tail is null)
                 return predicate;
 
-            return Expression.Or(predicate, Expression.And(Compare(ExpressionType.Equal), tail));
+            return Expression.Or(predicate, Expression.And(_comparer.Equal(PropertyType, prop, value), tail));
         }
 
         /// <summary>

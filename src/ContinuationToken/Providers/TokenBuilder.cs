@@ -19,7 +19,7 @@ namespace ContinuationToken.Providers
 
         public ITokenFormatter Formatter { get; private set; } = new Base64TokenFormatter(new JsonTokenFormatter());
 
-        public IMethodResolver Resolver { get; private set; } = new MethodResolver();
+        public ComparisonProviderFactory ComparisonProviders { get; private set; } = new ComparisonProviderFactory();
 
         private ITokenBuilder<T> Sort<TProp>(Expression<Func<T, TProp>> property, bool descending)
         {
@@ -28,7 +28,7 @@ namespace ContinuationToken.Providers
 
             var prop = new SortedProperty<T, TProp>(
                 Unify(property),
-                Resolver.GetCompareMethod<TProp>(),
+                ComparisonProviders.GetProvider(typeof(TProp)),
                 descending: descending,
                 first: _properties.Count == 0);
 
@@ -56,9 +56,9 @@ namespace ContinuationToken.Providers
             return this;
         }
 
-        public ITokenBuilder<T> UseResolver(IMethodResolver resolver)
+        public ITokenBuilder<T> UseComparer(Type type, IComparisonProvider provider)
         {
-            Resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
+            ComparisonProviders.Register(type, provider);
             return this;
         }
 
